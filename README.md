@@ -32,7 +32,7 @@ Flyt:
 
         # Alias of the Dev Hub org to use for retrieving package version information
         # Required: false
-        # Default: 'dev-hub'
+        # Default: 'devhub'
         devhub-alias: ''
 
         # Enable debug logging output

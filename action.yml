@@ -10,7 +10,7 @@ inputs:
   devhub-alias:
     description: Alias of the Dev Hub org to use for retrieving package version information
     required: false
-    default: dev-hub
+    default: devhub
   debug:
     description: Enable debug logging output
     required: false
