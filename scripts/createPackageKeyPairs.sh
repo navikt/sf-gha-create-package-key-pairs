@@ -202,9 +202,10 @@ debug "Package query list: $packagesFlag"
 sf_args=(package version list -v "$DEVHUB_ALIAS" --modified-last-days "$MODIFIED_DAYS" --json --packages "$packagesFlag")
 debug "Running: sf ${sf_args[*]}"
 # Execute sf command robustly without letting set -e swallow the error before we handle it.
+# Use simple redirection instead of process substitution for GitHub Actions compatibility.
 {
   set +e
-  sf_output=$(sf "${sf_args[@]}" 2> >(tee /tmp/sf_err.log >&2))
+  sf_output=$(sf "${sf_args[@]}" 2>/tmp/sf_err.log)
   sf_rc=$?
   set -e
 }
@@ -218,7 +219,9 @@ if (( sf_rc != 0 )); then
   fi
   echo "Invoked command: sf ${sf_args[*]}" >&2
   echo "Packages flag: $packagesFlag" >&2
-  [[ "$DEBUG" == "true" ]] && sf --version >&2 || true
+  if [[ "$DEBUG" == "true" ]]; then
+    sf --version >&2 || true
+  fi
   exit 2
 fi
 response="$sf_output"
@@ -300,7 +303,6 @@ done
 
 if ((${#pairs[@]}==0)); then
   [[ "$DEBUG" == "true" ]] && echo "[DEBUG] No password-protected matching versions found." >&2
-  echo ""  # explicit empty output
   if [[ "$DEBUG" != "true" && "$QUIET" != "true" ]]; then
     echo "Info: 0 protected versions matched" >&2
   fi
