@@ -272,7 +272,7 @@ for pkg in "${packageNames[@]}"; do
     latestProt="${protectedLatest["$pkg|$triple"]:-}"
     if [[ -n "$latestProt" ]]; then
       pairs+=("$pkg:$CRM_PACKAGE_KEY")
-      ((fallback_used++))
+      ((++fallback_used))
       debug "Resolved $pkg@$depVersion -> $latestProt (LATEST)"
       continue
     else
@@ -293,7 +293,7 @@ for pkg in "${packageNames[@]}"; do
     latestProt="${protectedLatest["$pkg|$triple"]:-}"
     if [[ -n "$latestProt" ]]; then
       pairs+=("$pkg:$CRM_PACKAGE_KEY")
-      ((fallback_used++))
+      ((++fallback_used))
       debug "Fallback used for $pkg@$depVersion -> $latestProt"
       continue
     fi
