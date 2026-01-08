@@ -201,21 +201,26 @@ debug "Package query list: $packagesFlag"
 
 sf_args=(package version list -v "$DEVHUB_ALIAS" --modified-last-days "$MODIFIED_DAYS" --json --packages "$packagesFlag")
 debug "Running: sf ${sf_args[*]}"
-# Execute sf command robustly without letting set -e swallow the error before we handle it.
-# Use simple redirection instead of process substitution for GitHub Actions compatibility.
-{
-  set +e
-  sf_output=$(sf "${sf_args[@]}" 2>/tmp/sf_err.log)
+# Execute sf command and capture exit code without triggering ERR trap.
+if sf_output=$(sf "${sf_args[@]}" 2>sf_err.log); then
+  sf_rc=0
+else
   sf_rc=$?
-  set -e
-}
+  # Append sf response to log file only on failure
+  if [[ -n "$sf_output" ]]; then
+    echo "-- sf response (stdout) --" >> sf_err.log
+    echo "$sf_output" >> sf_err.log
+  fi
+fi
 if (( sf_rc != 0 )); then
   echo "Error: sf package version list command failed (exit $sf_rc)" >&2
-  if [[ -s /tmp/sf_err.log ]]; then
+  if [[ -n "$sf_output" ]]; then
+    echo "-- sf response (stdout) --" >&2
+    echo "$sf_output" | sed 's/^/  /' >&2 || true
+  fi
+  if [[ -s sf_err.log ]]; then
     echo "-- sf stderr --" >&2
-    sed 's/^/  /' /tmp/sf_err.log >&2 || true
-  else
-    echo "(No stderr captured from sf)" >&2
+    sed 's/^/  /' sf_err.log >&2 || true
   fi
   echo "Invoked command: sf ${sf_args[*]}" >&2
   echo "Packages flag: $packagesFlag" >&2
