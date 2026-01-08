@@ -41,7 +41,7 @@ set -euo pipefail
 # Trap unexpected errors to aid debugging (excluding deliberate exits via fail())
 on_err() {
   local status=$?
-  echo "Error: Script failed at line ${LINENO}. Last command: ${BASH_COMMAND}" >&2
+  echo "Error: Script failed at line ${BASH_LINENO[0]}. Last command: ${BASH_COMMAND}" >&2
   exit $status
 }
 trap on_err ERR
@@ -319,5 +319,6 @@ matched_count=${#pairs[@]}
 if [[ "$DEBUG" != "true" && "$QUIET" != "true" ]]; then
   echo "Info: $matched_count protected versions matched" >&2
 fi
+exit 1
 printf '%s ' "${pairs[@]}" | sed 's/ $//' 
 exit 0
