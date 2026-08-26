@@ -15,9 +15,13 @@ inputs:
     description: Enable debug logging output
     required: false
     default: "false"
+  json:
+    description: Output package-keys as a JSON object ({"pkg":"key"}) instead of space-separated pairs
+    required: false
+    default: "false"
 outputs:
   package-keys:
-    description: Space-separated list of package:key pairs for protected dependencies
+    description: Space-separated list of package:key pairs for protected dependencies, or a JSON object when the json input is true
     value: ${{ steps.create_keys.outputs.package-keys }}
 runs:
   using: composite
@@ -27,6 +31,7 @@ runs:
       shell: bash
       env:
         DEBUG: ${{ inputs.debug }}
+        JSON: ${{ inputs.json }}
         CRM_PACKAGE_KEY: ${{ inputs.package-key }}
         SFDX_PROJECT_PATH: ${{ inputs.sfdx-project-path }}
         DEVHUB_ALIAS: ${{ inputs.devhub-alias }}
@@ -37,6 +42,10 @@ runs:
         if [ "$DEBUG" = "true" ]; then
           debug_flag="--debug"
         fi
+        json_flag=""
+        if [ "$JSON" = "true" ]; then
+          json_flag="--json"
+        fi
         keys="$(
           bash "$GITHUB_ACTION_PATH/scripts/createPackageKeyPairs.sh" \
             --sfdx-project-path "$SFDX_PROJECT_PATH" \
@@ -44,6 +53,7 @@ runs:
             --devhub "$DEVHUB_ALIAS" \
             --modified-last-days 3000 \
             --latest-fallback \
-            $debug_flag
+            $debug_flag \
+            $json_flag
         )"
         echo "package-keys=${keys}" >> "$GITHUB_OUTPUT"

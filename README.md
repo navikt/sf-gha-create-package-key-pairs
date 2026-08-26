@@ -1,6 +1,7 @@
 # sf-gha-create-package-key-pairs
 
 Denne actionen lager en package key pair string på formatet `packageA:key packageB:key`.
+Ved å sette `json: 'true'` returneres et JSON-objekt på formatet `{"packageA":"key","packageB":"key"}` i stedet.
 
 Forutsetninger:
 
@@ -39,6 +40,11 @@ Flyt:
         # Required: false
         # Default: 'false'
         debug: ''
+
+        # Output package-keys as a JSON object ({"pkg":"key"}) instead of space-separated pairs
+        # Required: false
+        # Default: 'false'
+        json: ''
 
 - run: |
     sf install packages -key "$SFP_PACKAGE_KEY_PAIRS"

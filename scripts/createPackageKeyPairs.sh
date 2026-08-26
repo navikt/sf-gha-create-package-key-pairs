@@ -22,11 +22,13 @@
 #       --devhub <alias>             Dev Hub alias/username (default: devhub)
 #       --modified-last-days <n>     Lookback window for sf query (default: 1000)
 #       --debug                      Enable debug logging to stderr
+#   -j, --json                       Output a JSON object instead of space-separated pairs
 #   -h, --help                       Show help/usage
 #
 # Output:
 #   Prints space-separated pairs like: pkgA:key pkgB:key
-#   Prints nothing if no password-protected matching versions found.
+#   With --json, prints a JSON object like: {"pkgA":"key","pkgB":"key"}
+#   Prints nothing (or {} with --json) if no password-protected matching versions found.
 #
 # Requirements:
 #   bash 4+, jq, sf CLI (authenticated to the target Dev Hub), read access to sfdx-project.json.
@@ -94,6 +96,7 @@ Options:
       --debug                      Verbose debug logging to stderr
   -q, --quiet                      Suppress non-error informational summary lines
       --latest-fallback            If exact build not found (or version uses .LATEST), use highest protected build
+  -j, --json                       Output a JSON object ({"pkg":"key"}) instead of space-separated pairs
   -h, --help                       Show this help and exit
 
 Behavior:
@@ -125,13 +128,15 @@ MODIFIED_DAYS="1000"
 DEBUG="false"
 QUIET="false"
 LATEST_FALLBACK="false"
+JSON_OUTPUT="false"
 
-while getopts "p:k:hq-:" opt; do
+while getopts "p:k:hqj-:" opt; do
   case $opt in
     p) SFDX_PROJECT_PATH="$OPTARG" ;;
     k) CRM_PACKAGE_KEY="$OPTARG" ;;
     h) print_help; exit 0 ;;
     q) QUIET="true" ;;
+    j) JSON_OUTPUT="true" ;;
     -)
       case "$OPTARG" in
         sfdx-project-path) SFDX_PROJECT_PATH="${!OPTIND}"; OPTIND=$((OPTIND+1)) ;;
@@ -141,11 +146,12 @@ while getopts "p:k:hq-:" opt; do
         debug) DEBUG="true" ;;
         latest-fallback) LATEST_FALLBACK="true" ;;
         quiet) QUIET="true" ;;
+        json) JSON_OUTPUT="true" ;;
         help) print_help; exit 0 ;;
         *) fail "Invalid option --$OPTARG" ;;
       esac
       ;;
-    *) fail "Usage: $0 -p <sfdx-project.json> -k <key> [--devhub alias] [--modified-last-days N] [--debug] [--quiet]" ;;
+    *) fail "Usage: $0 -p <sfdx-project.json> -k <key> [--devhub alias] [--modified-last-days N] [--debug] [--quiet] [--json]" ;;
   esac
 done
 
@@ -311,6 +317,7 @@ if ((${#pairs[@]}==0)); then
   if [[ "$DEBUG" != "true" && "$QUIET" != "true" ]]; then
     echo "Info: 0 protected versions matched" >&2
   fi
+  [[ "$JSON_OUTPUT" == "true" ]] && echo "{}"
   exit 0
 fi
 
@@ -319,5 +326,11 @@ matched_count=${#pairs[@]}
 if [[ "$DEBUG" != "true" && "$QUIET" != "true" ]]; then
   echo "Info: $matched_count protected versions matched" >&2
 fi
-printf '%s ' "${pairs[@]}" | sed 's/ $//' 
+if [[ "$JSON_OUTPUT" == "true" ]]; then
+  printf '%s\n' "${pairs[@]}" | jq -Rnc '
+    [inputs | select(length > 0) | capture("^(?<pkg>[^:]+):(?<key>.*)$") | {key: .pkg, value: .key}] | from_entries
+  '
+else
+  printf '%s ' "${pairs[@]}" | sed 's/ $//'
+fi
 exit 0
